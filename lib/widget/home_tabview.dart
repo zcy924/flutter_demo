@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_3/model/book_list.dart';
+import 'package:flutter_3/pages/detail_page.dart';
+import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 TabBarView homeTabView(TabController _tabController) {
   return TabBarView(
@@ -17,21 +23,190 @@ class HomePageItem extends StatefulWidget {
 }
 
 class _HomePageItemState extends State<HomePageItem> {
+  StreamController<List<Data>> ctrl = new StreamController<List<Data>>();
+  ScrollController _scrollController = new ScrollController();
+  List<Data> loadList = [];
+  final dio = new Dio();
+
+  Future<List<Data>> fetchPost() async {
+    final response = await dio.get('https://www.apiopen.top/novelApi');
+    if (response.statusCode == 200) {
+      // If the call to the server was successful, parse the JSON
+//      return (BookList.fromJson(json.decode(response.body))).data;
+      return (BookList.fromJson(response.data)).data;
+    } else {
+      // If that call was not successful, throw an error.
+      throw Exception('Failed to load post');
+    }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    fetchPost().then((value) {
+      loadList = value;
+      ctrl.sink.add(value);
+    });
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent) {
+        print('滑动到了最底部');
+        _getMore();
+      }
+    });
+  }
+
+  void _getMore() {
+    fetchPost().then((value) {
+      loadList.addAll(value);
+      ctrl.sink.add(loadList);
+    });
+  }
+
+  Future<List<Data>> refresh() async {
+    return fetchPost().then((value) {
+      loadList.clear();
+      loadList = value;
+      ctrl.sink.add(value);
+    });
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    ctrl.close();
+  }
+
+  void _qryDetail(Data data) {
+    print('查看详情');
+    Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return new DetailPage(data.bookname);
+    }));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      child: ListView(
-        children: <Widget>[
-          pageItem1,
-          Padding(
-            padding: EdgeInsets.only(bottom: 5.0),
-          ),
-          pageItem2,
-          Padding(
-            padding: EdgeInsets.only(bottom: 5.0),
-          ),
-          pageItem1
-        ],
+      child: StreamBuilder(
+        stream: ctrl.stream,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            List<Data> list = snapshot.data;
+            int length = list.length;
+            return RefreshIndicator(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  itemCount: length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == length) {
+                      return Container(
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+                    return Material(
+                      child: Ink(
+                        color: Colors.white,
+                        child: InkWell(
+                            onTap: () {
+                              _qryDetail(list[index]);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+//                                  color: Colors.white,
+                                  border: Border(
+                                      bottom: BorderSide(
+                                          color: Colors.grey[200], width: 4))),
+                              child: Column(
+                                children: <Widget>[
+                                  Container(
+//                                    color: Colors.white,
+                                    padding: EdgeInsets.all(10.0),
+                                    child: Row(
+                                      children: <Widget>[
+                                        Expanded(
+                                          child: Text(
+                                            list[index].bookname,
+                                            style: TextStyle(
+                                                fontSize: 17.0,
+                                                fontWeight: FontWeight.bold),
+                                            maxLines: 2,
+                                            softWrap: true,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Expanded(
+                                            child: Container(
+                                          padding: EdgeInsets.fromLTRB(
+                                              10.0, 5.0, 0, 0),
+                                          child: Text(
+                                            list[index].bookInfo,
+                                            maxLines: 3,
+                                            softWrap: true,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        )),
+                                        Container(
+                                          margin: EdgeInsets.fromLTRB(
+                                              10, 0, 10, 10),
+                                          width: 130,
+                                          height: 80,
+                                          decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(10.0),
+                                              image: DecorationImage(
+                                                  fit: BoxFit.cover,
+                                                  image: NetworkImage(
+                                                      list[index].bookCover))),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: <Widget>[
+                                        Text(
+                                          '58赞同·80评论',
+                                          style: TextStyle(
+                                              color: Colors.grey[400]),
+                                        ),
+                                        Text(
+                                          '···',
+                                          style: TextStyle(
+                                              color: Colors.grey[400]),
+                                        )
+                                      ],
+                                    ),
+                                  )
+                                ],
+                              ),
+                            )),
+                      ),
+                    );
+                  },
+                ),
+                onRefresh: refresh);
+          }
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        },
       ),
     );
   }
@@ -368,7 +543,9 @@ Widget hotRank4 = Container(
           child: Text(
             '4',
             style: TextStyle(
-                color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 17.0),
+                color: Colors.orangeAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 17.0),
           ),
         ),
         Expanded(
@@ -422,7 +599,9 @@ Widget hotRank5 = Container(
           child: Text(
             '5',
             style: TextStyle(
-                color: Colors.orangeAccent, fontWeight: FontWeight.bold, fontSize: 17.0),
+                color: Colors.orangeAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 17.0),
           ),
         ),
         Expanded(

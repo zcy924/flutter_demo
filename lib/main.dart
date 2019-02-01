@@ -8,8 +8,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '仿照知乎布局',
-      theme:
-          ThemeData(primaryColor: Colors.redAccent, primarySwatch: Colors.yellow,backgroundColor: Colors.grey[200]),
+      theme: ThemeData(
+          primaryColor: Colors.redAccent,
+          primarySwatch: Colors.lightBlue,
+          backgroundColor: Colors.grey[200]),
       home: new HomePage(),
       debugShowCheckedModeBanner: false,
     );

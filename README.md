@@ -1,4 +1,16 @@
-# flutter_demo
+# flutter_3
 
-自己在学习 flutter 时做的一个小 demo，基本页面布局是仿造知乎来的，
-只有各个功能的首页静态页面，主要是为了练习一下使用 material 组件构建页面布局的能力，目录结构感觉不合理啊，后期有空慢慢优化着玩吧。
+A new Flutter project.
+
+## Getting Started
+
+This project is a starting point for a Flutter application.
+
+A few resources to get you started if this is your first Flutter project:
+
+- [Lab: Write your first Flutter app](https://flutter.io/docs/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://flutter.io/docs/cookbook)
+
+For help getting started with Flutter, view our 
+[online documentation](https://flutter.io/docs), which offers tutorials, 
+samples, guidance on mobile development, and a full API reference.
